@@ -3,12 +3,14 @@ const router = express.Router();
 const nodemailer = require('nodemailer');
 const Admin = require('../models/Admin');
 
-// Configure email transporter
+// Configure email transporter (GoDaddy Titan SMTP)
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtpout.secureserver.net', // GoDaddy Titan SMTP server
+  port: 465,                        // Secure port
+  secure: true,                     // Use SSL
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
+    user: 'info@murickaenterprises.com', // Your business email
+    pass: process.env.EMAIL_PASS         // Password from environment variable
   }
 });
 
