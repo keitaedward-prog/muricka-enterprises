@@ -3,28 +3,36 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const auth = require('../middleware/auth');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
-// Configure multer for image upload
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');
-  },
-  filename: (req, file, cb) => {
-    const unique = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname);
-    cb(null, unique + ext);
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: 'dcl8vzoio', // Your Cloudinary cloud name
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+// Configure Multer to use Cloudinary
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'muricka_products', // Folder in Cloudinary
+    allowed_formats: ['jpg', 'jpeg', 'png', 'gif'],
+    transformation: [{ width: 500, height: 500, crop: 'limit' }]
   }
 });
 
-const upload = multer({ storage });
+const upload = multer({ storage: storage });
 
 // Upload images (admin only)
 router.post('/', auth, upload.array('images', 20), (req, res) => {
   if (!req.files || req.files.length === 0) {
     return res.status(400).json({ message: 'No files uploaded' });
   }
-  const fileNames = req.files.map(f => f.filename);
-  res.json({ files: fileNames });
+  // Extract the Cloudinary URLs (or public IDs) from the uploaded files
+  const fileUrls = req.files.map(file => file.path); // Cloudinary returns the secure URL in 'path'
+  res.json({ files: fileUrls });
 });
 
 module.exports = router;
