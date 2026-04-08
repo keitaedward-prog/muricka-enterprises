@@ -3,14 +3,12 @@ const router = express.Router();
 const nodemailer = require('nodemailer');
 const Admin = require('../models/Admin');
 
-// Configure email transporter (GoDaddy Titan SMTP)
+// Configure email transporter using Gmail service
 const transporter = nodemailer.createTransport({
-  host: 'smtpout.secureserver.net', // GoDaddy Titan SMTP server
-  port: 465,                        // Secure port
-  secure: true,                     // Use SSL
+  service: 'gmail',
   auth: {
-    user: 'info@murickaenterprises.com', // Your business email
-    pass: process.env.EMAIL_PASS         // Password from environment variable
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
   }
 });
 
@@ -19,7 +17,6 @@ const getAdminEmails = async () => {
   const admins = await Admin.find({}, { email: 1, _id: 0 });
   const emails = admins.map(admin => admin.email);
   if (emails.length === 0 && process.env.ADMIN_EMAIL) {
-    // Fallback to the default admin email if no admins in DB
     emails.push(process.env.ADMIN_EMAIL);
   }
   return emails;
@@ -35,7 +32,7 @@ router.post('/general', async (req, res) => {
     }
 
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: process.env.EMAIL_USER, // sender will be your Gmail address
       to: adminEmails.join(', '),
       subject: `New General Enquiry from ${name}`,
       html: `
@@ -50,7 +47,7 @@ router.post('/general', async (req, res) => {
     await transporter.sendMail(mailOptions);
     res.json({ message: 'Enquiry sent successfully' });
   } catch (error) {
-    console.error(error);
+    console.error('Email send error:', error);
     res.status(500).json({ message: 'Failed to send enquiry' });
   }
 });
@@ -81,7 +78,7 @@ router.post('/item', async (req, res) => {
     await transporter.sendMail(mailOptions);
     res.json({ message: 'Enquiry sent successfully' });
   } catch (error) {
-    console.error(error);
+    console.error('Email send error:', error);
     res.status(500).json({ message: 'Failed to send enquiry' });
   }
 });
