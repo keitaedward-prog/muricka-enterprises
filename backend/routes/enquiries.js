@@ -1,16 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const Admin = require('../models/Admin');
 
-// Configure email transporter using Gmail service
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
-});
+// Initialize Resend with your API key from environment variables
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Helper to get all admin emails
 const getAdminEmails = async () => {
@@ -27,13 +21,14 @@ router.post('/general', async (req, res) => {
   try {
     const { name, email, phone, message } = req.body;
     const adminEmails = await getAdminEmails();
+
     if (adminEmails.length === 0) {
       return res.status(500).json({ message: 'No admin email configured' });
     }
 
-    const mailOptions = {
-      from: process.env.EMAIL_USER, // sender will be your Gmail address
-      to: adminEmails.join(', '),
+    const { data, error } = await resend.emails.send({
+      from: `Muricka Enterprises <info@murickaenterprises.com>`,
+      to: adminEmails,
       subject: `New General Enquiry from ${name}`,
       html: `
         <h2>General Enquiry</h2>
@@ -42,9 +37,14 @@ router.post('/general', async (req, res) => {
         <p><strong>Phone:</strong> ${phone || 'Not provided'}</p>
         <p><strong>Message:</strong></p>
         <p>${message}</p>
-      `
-    };
-    await transporter.sendMail(mailOptions);
+      `,
+    });
+
+    if (error) {
+      console.error('Resend error:', error);
+      return res.status(500).json({ message: 'Failed to send enquiry' });
+    }
+
     res.json({ message: 'Enquiry sent successfully' });
   } catch (error) {
     console.error('Email send error:', error);
@@ -57,13 +57,14 @@ router.post('/item', async (req, res) => {
   try {
     const { name, email, phone, message, itemName, itemType } = req.body;
     const adminEmails = await getAdminEmails();
+
     if (adminEmails.length === 0) {
       return res.status(500).json({ message: 'No admin email configured' });
     }
 
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: adminEmails.join(', '),
+    const { data, error } = await resend.emails.send({
+      from: `Muricka Enterprises <info@murickaenterprises.com>`,
+      to: adminEmails,
       subject: `Enquiry about ${itemType}: ${itemName}`,
       html: `
         <h2>${itemType} Enquiry</h2>
@@ -73,9 +74,14 @@ router.post('/item', async (req, res) => {
         <p><strong>Phone:</strong> ${phone || 'Not provided'}</p>
         <p><strong>Message:</strong></p>
         <p>${message}</p>
-      `
-    };
-    await transporter.sendMail(mailOptions);
+      `,
+    });
+
+    if (error) {
+      console.error('Resend error:', error);
+      return res.status(500).json({ message: 'Failed to send enquiry' });
+    }
+
     res.json({ message: 'Enquiry sent successfully' });
   } catch (error) {
     console.error('Email send error:', error);
